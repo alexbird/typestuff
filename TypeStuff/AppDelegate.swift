@@ -136,7 +136,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.activate(ignoringOtherApps: true)
         } else {
             // Create new settings window
-            let contentView = ContentView()
+            let settingsView = SettingsView()
                 .environmentObject(preferences)
             
             let window = NSWindow(
@@ -147,7 +147,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             )
             
             window.title = "TypeStuff Settings"
-            window.contentView = NSHostingView(rootView: contentView)
+            window.contentView = NSHostingView(rootView: settingsView)
             window.center()
             window.setFrameAutosaveName("TypeStuffSettings")
             window.isReleasedWhenClosed = false

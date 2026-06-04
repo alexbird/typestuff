@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  SettingsView.swift
 //  TypeStuff
 //
 //  Created by Alex Bird on 30/05/2026.
@@ -7,48 +7,52 @@
 
 import SwiftUI
 import ApplicationServices
+import ServiceManagement
 
-struct ContentView: View {
+struct SettingsView: View {
     @EnvironmentObject var preferences: UserPreferences
     @State private var hasAccessibilityPermission = false
+    @State private var launchAtLogin = false
+    @Environment(\.appearsActive) private var appearsActive
     
     var body: some View {
+        TabView {
+            typingTab
+                .tabItem {
+                    Label("Typing", systemImage: "keyboard")
+                }
+            
+            systemTab
+                .tabItem {
+                    Label("System", systemImage: "gearshape")
+                }
+        }
+        .frame(minWidth: 400, idealWidth: 500, maxWidth: .infinity,
+               minHeight: 300, idealHeight: 500, maxHeight: .infinity)
+        .onAppear {
+            checkPermissions()
+            syncLaunchAtLoginState()
+        }
+        .onChange(of: appearsActive) { _, newValue in
+            guard newValue else { return }
+            syncLaunchAtLoginState()
+        }
+        .onChange(of: launchAtLogin) { _, newValue in
+            if newValue {
+                try? SMAppService.mainApp.register()
+            } else {
+                try? SMAppService.mainApp.unregister()
+            }
+        }
+    }
+    
+    private func syncLaunchAtLoginState() {
+        launchAtLogin = SMAppService.mainApp.status == .enabled
+    }
+    
+    private var typingTab: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                
-                // Permission status
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: hasAccessibilityPermission ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                            .foregroundColor(hasAccessibilityPermission ? .green : .orange)
-                        
-                        Text("Accessibility Permissions")
-                            .fontWeight(.semibold)
-                        
-                        Spacer()
-                        
-                        if !hasAccessibilityPermission {
-                            Button("Grant Access") {
-                                openSystemPreferences()
-                            }
-                            .buttonStyle(.borderedProminent)
-                        } else {
-                            Text("Enabled")
-                                .foregroundColor(.green)
-                                .fontWeight(.medium)
-                        }
-                    }
-                    
-                    Text("Required to send keyboard events to other applications")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .padding()
-                .background(Color.secondary.opacity(0.1))
-                .cornerRadius(8)
-                
-                Divider()
-                
                 // Custom strings form
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Stuff to type")
@@ -148,10 +152,66 @@ struct ContentView: View {
             }
             .padding(24)
         }
-        .frame(minWidth: 400, idealWidth: 500, maxWidth: .infinity,
-               minHeight: 300, idealHeight: 500, maxHeight: .infinity)
-        .onAppear {
-            checkPermissions()
+    }
+    
+    private var systemTab: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                // Permission status
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: hasAccessibilityPermission ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                            .foregroundColor(hasAccessibilityPermission ? .green : .orange)
+                        
+                        Text("Accessibility Permissions")
+                            .fontWeight(.semibold)
+                        
+                        Spacer()
+                        
+                        if !hasAccessibilityPermission {
+                            Button("Grant Access") {
+                                openSystemPreferences()
+                            }
+                            .buttonStyle(.borderedProminent)
+                        } else {
+                            Text("Enabled")
+                                .foregroundColor(.green)
+                                .fontWeight(.medium)
+                        }
+                    }
+                    
+                    Text("Required to send keyboard events to other applications")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding()
+                .background(Color.secondary.opacity(0.1))
+                .cornerRadius(8)
+                
+                // Launch at login setting
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "power")
+                            .foregroundColor(.secondary)
+                        
+                        Text("Launch at Login")
+                            .fontWeight(.semibold)
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: $launchAtLogin)
+                            .toggleStyle(.switch)
+                    }
+                    
+                    Text("Add TypeStuff to the menu bar automatically when you log in")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding()
+                .background(Color.secondary.opacity(0.1))
+                .cornerRadius(8)
+            }
+            .padding(24)
         }
     }
     
@@ -172,6 +232,6 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    SettingsView()
         .environmentObject(UserPreferences())
 }
